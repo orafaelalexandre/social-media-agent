@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Media Agent — Rafael Alexandre</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --meia-noite: #00142F;
+    --gelo: #F2F8F9;
+    --azul: #424FFF;
+    --oceano: #001893;
+    --menta: #A7E6D7;
+    --coral: #FF6B4D;
+    --bg: #0A0F1E;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: rgba(255,255,255,0.07);
+    --text: #E8EDF5;
+    --muted: rgba(232,237,245,0.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--meia-noite) 0%, #0a1a4a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 38px; height: 38px;
+    background: var(--azul);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--gelo);
+  }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .refresh-btn {
+    background: rgba(66,79,255,0.15);
+    border: 1px solid rgba(66,79,255,0.3);
+    color: var(--azul);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .refresh-btn:hover { background: rgba(66,79,255,0.25); }
+  .refresh-btn.loading { opacity: 0.6; pointer-events: none; }
+
+  .stats-bar {
+    display: flex; gap: 6px;
+  }
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .stat-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── FILTROS ── */
+  .filters {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; margin-right: 4px; }
+  .chip {
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .chip:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .chip.active { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .chip.active-backlog { background: rgba(255,107,77,0.15); border-color: var(--coral); color: var(--coral); }
+  .chip.active-prepared { background: rgba(167,230,215,0.15); border-color: var(--menta); color: var(--menta); }
+  .chip.active-scheduled { background: rgba(66,79,255,0.15); border-color: var(--azul); color: var(--azul); }
+  .chip.active-done { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #22c55e; }
+  .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  /* ── MAIN ── */
+  .main { padding: 28px 32px 60px; max-width: 900px; margin: 0 auto; }
+
+  /* ── LOADING / ERRO ── */
+  .state-box {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+  }
+  .state-box .icon { font-size: 40px; margin-bottom: 16px; }
+  .state-box h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+  .state-box p { font-size: 13px; line-height: 1.6; max-width: 360px; margin: 0 auto; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--azul);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── SEMANA HEADER ── */
+  .semana-header {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--azul);
+    padding: 28px 0 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .semana-header:first-child { padding-top: 0; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .card:hover { border-color: rgba(66,79,255,0.3); }
+  .card.open { border-color: rgba(66,79,255,0.4); }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    cursor: pointer;
+  }
+
+  .fmt-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .fmt-reels   { background: rgba(255,107,77,0.15); color: var(--coral); }
+  .fmt-carrossel { background: rgba(66,79,255,0.15); color: #818cf8; }
+  .fmt-foto    { background: rgba(167,230,215,0.15); color: var(--menta); }
+  .fmt-framework { background: rgba(245,166,35,0.15); color: #f5a623; }
+  .fmt-texto   { background: rgba(255,255,255,0.08); color: var(--muted); }
+
+  .card-date {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .card-tema {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .s-backlog   { background: rgba(255,107,77,0.12); color: var(--coral); border: 1px solid rgba(255,107,77,0.25); }
+  .s-prepared  { background: rgba(167,230,215,0.12); color: var(--menta); border: 1px solid rgba(167,230,215,0.25); }
+  .s-scheduled { background: rgba(66,79,255,0.12); color: #818cf8; border: 1px solid rgba(66,79,255,0.3); }
+  .s-done      { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+  .s-default   { background: rgba(255,255,255,0.05); color: var(--muted); border: 1px solid var(--border); }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .card.open .chevron { transform: rotate(180deg); }
+
+  /* ── CARD BODY ── */
+  .card-body {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .card.open .card-body { display: block; }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 18px;
+  }
+  .tab {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 14px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab.active { color: var(--azul); border-bottom-color: var(--azul); }
+  .tab-pane { display: none; padding: 18px; }
+  .tab-pane.active { display: block; }
+
+  .legenda-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .empty-field {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ── ACTIONS ── */
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    border: none;
+  }
+  .btn-copy {
+    background: rgba(66,79,255,0.15);
+    color: var(--azul);
+    border: 1px solid rgba(66,79,255,0.3);
+  }
+  .btn-copy:hover { background: rgba(66,79,255,0.25); }
+  .btn-copy.ok { background: rgba(34,197,94,0.15); color: #4ade80; border-color: rgba(34,197,94,0.3); }
+
+  .btn-sheets {
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-sheets:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+  /* ── EMPTY STATE ── */
+  .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo-mark">RA</div>
+    <div>
+      <div class="header-title">Social Media Agent</div>
+      <div class="header-sub">@orafaelalexandre · Calendário Abril 2026</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="stats-bar" id="statsBar"></div>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+      <span>↻</span> Atualizar
+    </button>
+  </div>
+</header>
+
+<div class="filters">
+  <span class="filter-label">Formato</span>
+  <button class="chip active" data-filter="fmt" data-val="all" onclick="setFilter('fmt','all',this)">Todos</button>
+  <button class="chip" data-filter="fmt" data-val="Reels" onclick="setFilter('fmt','Reels',this)">Reels</button>
+  <button class="chip" data-filter="fmt" data-val="Carrossel" onclick="setFilter('fmt','Carrossel',this)">Carrossel</button>
+  <button class="chip" data-filter="fmt" data-val="Framework" onclick="setFilter('fmt','Framework',this)">Framework</button>
+  <button class="chip" data-filter="fmt" data-val="Foto" onclick="setFilter('fmt','Foto',this)">Foto / Dump</button>
+  <div class="sep"></div>
+  <span class="filter-label">Status</span>
+  <button class="chip active" data-filter="status" data-val="all" onclick="setFilter('status','all',this)">Todos</button>
+  <button class="chip" data-filter="status" data-val="Backlog" onclick="setFilter('status','Backlog',this)">Backlog</button>
+  <button class="chip" data-filter="status" data-val="Prepared" onclick="setFilter('status','Prepared',this)">Prepared</button>
+  <button class="chip" data-filter="status" data-val="Scheduled" onclick="setFilter('status','Scheduled',this)">Scheduled</button>
+  <button class="chip" data-filter="status" data-val="Done" onclick="setFilter('status','Done',this)">Done</button>
+</div>
+
+<main class="main" id="main">
+  <div class="state-box">
+    <div class="spinner"></div>
+    <h3>Carregando da planilha...</h3>
+    <p>Buscando dados do Google Sheets</p>
+  </div>
+</main>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbza1v7Meg0zLWDlm1YXZXgUiDYZgpJqHYqa7nV02mia0bryjTNBzqrzIyGAvaR1yXid/exec';
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1FnIaZr2OS1bilHn3U89NuvyVq1e1y5mB3TzUsBy26cE/edit';
+
+let allPosts = [];
+let filters = { fmt: 'all', status: 'all' };
+let openCard = null;
+let activeTab = {};
+
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+  btn.innerHTML = '<span>↻</span> Carregando...';
+
+  document.getElementById('main').innerHTML = `
+    <div class="state-box">
+      <div class="spinner"></div>
+      <h3>Carregando da planilha...</h3>
+      <p>Buscando dados do Google Sheets</p>
+    </div>`;
+
+  try {
+    const res = await fetch(SCRIPT_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    allPosts = data.posts || [];
+    render();
+  } catch(e) {
+    document.getElementById('main').innerHTML = `
+      <div class="state-box">
+        <div class="icon">⚠️</div>
+        <h3>Erro ao carregar</h3>
+        <p>Não foi possível buscar os dados. Verifique se o Apps Script está publicado corretamente e tente novamente.<br><br><small style="color:var(--muted)">${e.message}</small></p>
+      </div>`;
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '<span>↻</span> Atualizar';
+}
+
+function fmtClass(fmt) {
+  const f = fmt.toLowerCase();
+  if (f.includes('reels')) return 'fmt-reels';
+  if (f.includes('carrossel')) return 'fmt-carrossel';
+  if (f.includes('foto') || f.includes('dump')) return 'fmt-foto';
+  if (f.includes('framework')) return 'fmt-framework';
+  return 'fmt-texto';
+}
+
+function statusClass(s) {
+  const lower = s.toLowerCase();
+  if (lower.includes('backlog')) return 's-backlog';
+  if (lower.includes('prepared')) return 's-prepared';
+  if (lower.includes('scheduled') || lower.includes('schedu')) return 's-scheduled';
+  if (lower.includes('done') || lower.includes('publicado')) return 's-done';
+  return 's-default';
+}
+
+function matchFilter(post) {
+  const fmtOk = filters.fmt === 'all' || post.formato.toLowerCase().includes(filters.fmt.toLowerCase());
+  const statusOk = filters.status === 'all' || post.status.toLowerCase().includes(filters.status.toLowerCase());
+  return fmtOk && statusOk;
+}
+
+function render() {
+  const filtered = allPosts.filter(matchFilter);
+
+  // Stats
+  const total = allPosts.length;
+  const backlog = allPosts.filter(p => p.status.toLowerCase().includes('backlog')).length;
+  const prepared = allPosts.filter(p => p.status.toLowerCase().includes('prepared')).length;
+  const scheduled = allPosts.filter(p => p.status.toLowerCase().includes('scheduled') || p.status.toLowerCase().includes('schedu')).length;
+  const done = allPosts.filter(p => p.status.toLowerCase().includes('done')).length;
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-pill"><div class="dot" style="background:#555"></div>${total} posts</div>
+    <div class="stat-pill"><div class="dot" style="background:var(--coral)"></div>${backlog} backlog</div>
+    <div class="stat-pill"><div class="dot" style="background:var(--menta)"></div>${prepared} prepared</div>
+    <div class="stat-pill"><div class="dot" style="background:#818cf8"></div>${scheduled} scheduled</div>
+    ${done > 0 ? `<div class="stat-pill"><div class="dot" style="background:#4ade80"></div>${done} done</div>` : ''}
+  `;
+
+  if (filtered.length === 0) {
+    document.getElementById('main').innerHTML = `<div class="no-results">Nenhum post encontrado com os filtros selecionados.</div>`;
+    return;
+  }
+
+  // Agrupar por semana
+  const bySemana = {};
+  filtered.forEach(post => {
+    const key = post.semana || 'Sem semana';
+    if (!bySemana[key]) bySemana[key] = [];
+    bySemana[key].push(post);
+  });
+
+  let html = '';
+  Object.keys(bySemana).forEach(semana => {
+    html += `<div class="semana-header">${semana}</div>`;
+    bySemana[semana].forEach((post, i) => {
+      const id = `card-${semana}-${i}`.replace(/\s/g, '-');
+      const hasLeg = post.legenda && post.legenda.trim();
+      html += `
+        <div class="card" id="${id}">
+          <div class="card-head" onclick="toggleCard('${id}')">
+            <span class="fmt-badge ${fmtClass(post.formato)}">${post.formato}</span>
+            <span class="card-date">${post.data}</span>
+            <span class="card-tema">${esc(post.tema)}</span>
+            <span class="status-badge ${statusClass(post.status)}">${post.status || '—'}</span>
+            <span class="chevron">▾</span>
+          </div>
+          <div class="card-body">
+            <div class="tabs">
+              <div class="tab ${hasLeg ? 'active' : ''}" onclick="switchTab('${id}','legenda')">Legenda</div>
+              <div class="tab ${!hasLeg ? 'active' : ''}" onclick="switchTab('${id}','tema')">Tema / Conteúdo</div>
+            </div>
+            <div class="tab-pane ${hasLeg ? 'active' : ''}" id="${id}-legenda">
+              ${hasLeg
+                ? `<div class="legenda-text">${esc(post.legenda)}</div>`
+                : `<div class="empty-field">Legenda ainda não preenchida. Adiciona na coluna E da planilha.</div>`
+              }
+            </div>
+            <div class="tab-pane ${!hasLeg ? 'active' : ''}" id="${id}-tema">
+              <div class="legenda-text">${esc(post.tema)}</div>
+            </div>
+            <div class="actions">
+              ${hasLeg ? `<button class="btn btn-copy" id="btn-leg-${id}" onclick="copyText('${id}', ${JSON.stringify(post.legenda)}, 'btn-leg-${id}')">📋 Copiar legenda</button>` : ''}
+              <button class="btn btn-copy" id="btn-tema-${id}" onclick="copyText('${id}', ${JSON.stringify(post.tema)}, 'btn-tema-${id}')">📋 Copiar tema</button>
+              <button class="btn btn-sheets" onclick="window.open('${SHEETS_URL}','_blank')">↗ Abrir planilha</button>
+            </div>
+          </div>
+        </div>`;
+    });
+  });
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(id);
+  const isOpen = card.classList.contains('open');
+  // Fecha o anterior
+  if (openCard && openCard !== id) {
+    document.getElementById(openCard)?.classList.remove('open');
+  }
+  card.classList.toggle('open', !isOpen);
+  openCard = isOpen ? null : id;
+}
+
+function switchTab(cardId, tab) {
+  const tabs = document.querySelectorAll(`#${cardId} .tab`);
+  const panes = document.querySelectorAll(`#${cardId} .tab-pane`);
+  tabs.forEach(t => t.classList.remove('active'));
+  panes.forEach(p => p.classList.remove('active'));
+  document.getElementById(`${cardId}-${tab}`)?.classList.add('active');
+  // Ativa o tab correto
+  tabs.forEach(t => {
+    if (t.textContent.toLowerCase().includes(tab === 'legenda' ? 'legenda' : 'tema')) {
+      t.classList.add('active');
+    }
+  });
+}
+
+async function copyText(cardId, text, btnId) {
+  if (!text) return;
+  const btn = document.getElementById(btnId);
+  try {
+    await navigator.clipboard.writeText(text);
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Copiado!';
+    btn.classList.add('ok');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('ok'); }, 2000);
+  } catch(e) {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Copiado!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('ok'); }, 2000);
+    } catch(e2) {
+      alert('Não foi possível copiar. Seleciona o texto manualmente.');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+function setFilter(type, val, el) {
+  filters[type] = val;
+  // Reset chips do grupo
+  document.querySelectorAll(`[data-filter="${type}"]`).forEach(c => c.classList.remove('active','active-backlog','active-prepared','active-scheduled','active-done'));
+  el.classList.add('active');
+  render();
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// Carrega ao iniciar
+loadData();
+</script>
+</body>
+</html>
